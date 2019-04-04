@@ -1,5 +1,9 @@
 *.class
 *.trc
+**/*.trc
+*.txt
+**/*.txt
+*.dmp
 *.out
 *.o
 *.so

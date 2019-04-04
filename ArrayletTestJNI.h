@@ -12,8 +12,24 @@ extern "C" {
  * Method:    testPrimitiveArrayCriticalArraylets
  * Signature: ([DI)V
  */
-JNIEXPORT void JNICALL Java_ArrayletTestJNI_testPrimitiveArrayCriticalArraylets
+JNIEXPORT void JNICALL Java_ArrayletTestJNI_testPrimitiveArrayCriticalArraylets___3DI
   (JNIEnv *, jobject, jdoubleArray, jint);
+
+/*
+ * Class:     ArrayletTestJNI
+ * Method:    testPrimitiveArrayCriticalArraylets
+ * Signature: ([CI)V
+ */
+JNIEXPORT void JNICALL Java_ArrayletTestJNI_testPrimitiveArrayCriticalArraylets___3CI
+  (JNIEnv *, jobject, jcharArray, jint);
+
+/*
+ * Class:     ArrayletTestJNI
+ * Method:    testStringCriticalArraylets
+ * Signature: (Ljava/lang/String;I)V
+ */
+JNIEXPORT void JNICALL Java_ArrayletTestJNI_testStringCriticalArraylets
+  (JNIEnv *, jobject, jstring, jint);
 
 #ifdef __cplusplus
 }

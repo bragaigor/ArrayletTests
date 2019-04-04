@@ -1,5 +1,21 @@
 import java.util.concurrent.TimeUnit;
 
+/*
+ - Generate .h file  for JNI custom library
+./../../openj9-openjdk-jdk11/build/linux-x86_64-normal-server-release/jdk/bin/javac -h . ArrayletTestJNI.java
+
+ - Compile 
+g++ -c -fPIC -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux ArrayletTestJNI.cpp -o ArrayletTestJNI.o
+
+ - Link
+g++ -shared -fPIC -o libarraylet.so ArrayletTestJNI.o -lc
+
+ - Run. Note: path to -Djava.library.path= must be absolute path, normally it'll be $(pwd) 
+./../../openj9-openjdk-jdk11/build/linux-x86_64-normal-server-release/jdk/bin/java -cp . -Djava.library.path=$(pwd) ArrayletTestJNI
+./../../openj9-openjdk-jdk11/build/linux-x86_64-normal-server-release/jdk/bin/java -cp . -Djava.library.path=$(pwd) -Xgcpolicy:balanced -Xmx1g ArrayletTestJNI
+./../../openj9-openjdk-jdk11/build/linux-x86_64-normal-server-release/jdk/bin/java -cp . -Djava.library.path=$(pwd) -Xgcpolicy:balanced -Xmx1g -XXgc:enableDoubleMapping ArrayletTestJNI
+*/
+
 public class ArrayletTestJNI {
 
 	static {
@@ -9,20 +25,56 @@ public class ArrayletTestJNI {
 	}
 
 	public native void testPrimitiveArrayCriticalArraylets(double[] array, int arrayLength);
+	public native void testPrimitiveArrayCriticalArraylets(char[] array, int arrayLength);
+	public native void testStringCriticalArraylets(String str, int arrayLength);
+
+	private static int roundDown(int arrayLength, int multiple) {
+		int mult = arrayLength / multiple;
+		return multiple * mult; 
+	}
 	
 	public static void main(String[] args) {
 
-		int arrayLength = 8_390_608; // Hybrid, 128 + 1 arraylet leaves
+		int arrayLength = 8_484_144; //8_390_608 -> Hybrid, 128 + 1 arraylet leaves. 8_454_144 -> Discontiguous 129 leaves
 		double[] myList1 = new double[arrayLength];
-		double[] myList2 = new double[880_000]; // Hybrid 13 + 1  arraylet leaves:: 524_288 -> 8 discontiguous 8 arraylet leaves
+		System.out.println("About to create an array of chars!");
+		char[] charArray = new char[arrayLength];
+
+		System.out.println("Double.SIZE: " + Double.SIZE + ", 524288/Double.SIZE: " + (524288/Double.SIZE));
+
+		System.out.println("New array length: " + arrayLength);
+
+		/* ****************************************************************************************************** */
+
+		StringBuffer strBuffer = new StringBuffer();
+		int strLength = 4_194_304; // 4_194_304 exactly 16 leaves if each char is 2 bytes
+		for(int i = 0; i < strLength/2048; i++) {
+			// System.out.println("Adding 2048 more chars to the string");
+			strBuffer.append("11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111");
+		}
+		System.out.println("I am about to create a new String!!! Heads up!!");
+		String myString = strBuffer.toString();
+		strLength = myString.length();
+		System.out.println("New String array length: " + strLength);
+
+		// arrayLength = roundDown(arrayLength, 524288/(Double.SIZE/8));
 
 		for(int i = 0; i < arrayLength; i++) {
 			myList1[i] = 3.14;
 		}
 
 		long startTime = System.nanoTime();
+		long middleTime = 0;
+		long middleTime2 = 0;
 		try {
 			new ArrayletTestJNI().testPrimitiveArrayCriticalArraylets(myList1, arrayLength);
+			System.out.println("##############################################################################################");
+			System.out.println("Just called testPrimitiveArrayCriticalArraylets(), about to call testStringCriticalArraylets()");
+			System.out.println("##############################################################################################");
+			middleTime = System.nanoTime();
+			new ArrayletTestJNI().testStringCriticalArraylets(myString, strLength);
+			middleTime2 = System.nanoTime();
+			new ArrayletTestJNI().testPrimitiveArrayCriticalArraylets(charArray, arrayLength);
 		} catch(UnsatisfiedLinkError e) {
 			System.out.println("No natives found for JNI test");
 			return;
@@ -30,25 +82,54 @@ public class ArrayletTestJNI {
 		long endTime = System.nanoTime();
 
 		System.out.println("myList1 values after testPrimitiveArrayCriticalArraylets() call");
-		System.out.println("myList1[0] = " + myList1[0] + ", myList1[1] = " + myList1[1] + ", myList1[4096] = " + myList1[4096]);
+		System.out.println("myList1[0] = " + myList1[0] + 
+				 "\nmyList1[1] = " + myList1[1] + 
+			       	 "\nmyList1[4096] = " + myList1[4096] + 
+				 "\nmyList1[430,080] = " + myList1[430_080] + 
+				 "\nmyList1[638,976] = " + myList1[638_976] + 
+				 "\nmyList1[1,875,968] = " + myList1[1_875_968] + 
+				 "\nmyList1[8,437,760] = " + myList1[8_437_760] +
+				 "\nmyList1["+(arrayLength-1)+"] = " + myList1[arrayLength-1]);
+
+		System.out.println("\nmyString values after testStringCriticalArraylets() call");
+                System.out.println("myString[0] = " + myString.charAt(0) +
+                                 "\nmyString[1] = " + myString.charAt(1) +
+                                 "\nmyString[4096] = " + myString.charAt(4096) +
+                                 "\nmyString[430,075:430,085] = " + myString.substring(430075, 430085) +
+                                 "\nmyString[638,970:638,980] = " + myString.substring(638970, 638980) +
+                                 "\nmyString[1,875,960:1,875,970] = " + myString.substring(1_875_960, 1_875_970) +
+				 "\nmyString[] = " + myString.substring(1_875_960, 1_875_970) +
+                                 "\nmyString["+(strLength-1)+":] = " + myString.substring(strLength-10));
+
 		/*
-		for(int i = 0; i < arrayLength; i += 4096) {
-                        System.out.print(i + ":" + myList1[i] + ", ");
+		for(int i = 0; i < strLength; i += 4096) {
+			System.out.print(myString.charAt(i) + ", ");
+                        // System.out.print(i + ":" + myList1[i] + ", ");
                 }
 		*/
 
 		// get difference of two nanoTime values
-		long timeElapsed = endTime - startTime;
-		System.out.println("Execution time of testPrimitiveArrayCriticalArraylets() in nano seconds : " + timeElapsed);
+		long timeElapsed = middleTime - startTime;
+		System.out.println("\nExecution time of testPrimitiveArrayCriticalArraylets() in nano seconds : " + timeElapsed);
 		System.out.println("Execution time of testPrimitiveArrayCriticalArraylets() in micro seconds : " + timeElapsed/1_000);
 		System.out.println("Execution time of testPrimitiveArrayCriticalArraylets() in milli seconds : " + timeElapsed/1_000_000);
+
+		timeElapsed = middleTime2 - middleTime;
+                System.out.println("\nExecution time of testStringCriticalArraylets() in nano seconds : " + timeElapsed);
+                System.out.println("Execution time of testStringCriticalArraylets() in micro seconds : " + timeElapsed/1_000);
+                System.out.println("Execution time of testStringCriticalArraylets() in milli seconds : " + timeElapsed/1_000_000);
+
+		timeElapsed = endTime - middleTime2;
+                System.out.println("\nExecution time of testCharCriticalArraylets() in nano seconds : " + timeElapsed);
+                System.out.println("Execution time of testCharCriticalArraylets() in micro seconds : " + timeElapsed/1_000);
+                System.out.println("Execution time of testCharCriticalArraylets() in milli seconds : " + timeElapsed/1_000_000);
 		
 		startTime = System.nanoTime();
 		// Clean myList1 from memory 
 		System.gc();
 		endTime = System.nanoTime();
 		timeElapsed = endTime - startTime;
-		System.out.println("Time to collect myList1 with 128 + 1 arraylet leaves in nano seconds : " + timeElapsed);
+		System.out.println("\nTime to collect myList1 with 128 + 1 arraylet leaves in nano seconds : " + timeElapsed);
                 System.out.println("Time to collect myList1 with 128 + 1 arraylet leaves  in micro seconds : " + timeElapsed/1_000);
                 System.out.println("Time to collect myList1 with 128 + 1 arraylet leaves  in milli seconds : " + timeElapsed/1_000_000);
 
@@ -58,7 +139,7 @@ public class ArrayletTestJNI {
                 }
 		startTime = System.nanoTime();
 		for(int i = 0; i < arrayLength; i += 4096) {
-                        System.out.print(i + ":" + myList1[i] + ", ");
+                        // System.out.print(i + ":" + myList1[i] + ", ");
 			myList3[i] = 7.55;
                 }
 		System.out.println();
