@@ -2,7 +2,7 @@ import java.util.concurrent.TimeUnit;
 
 /*
  - Generate .h file  for JNI custom library
-./../../openj9-openjdk-jdk11/build/linux-x86_64-normal-server-release/jdk/bin/javac -h . ArrayletTestJNI.java
+javac -h . ArrayletTestJNI.java
 
  - Compile 
 g++ -c -fPIC -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux ArrayletTestJNI.cpp -o ArrayletTestJNI.o
@@ -11,9 +11,10 @@ g++ -c -fPIC -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux ArrayletTestJNI
 g++ -shared -fPIC -o libarraylet.so ArrayletTestJNI.o -lc
 
  - Run. Note: path to -Djava.library.path= must be absolute path, normally it'll be $(pwd) 
-./../../openj9-openjdk-jdk11/build/linux-x86_64-normal-server-release/jdk/bin/java -cp . -Djava.library.path=$(pwd) ArrayletTestJNI
-./../../openj9-openjdk-jdk11/build/linux-x86_64-normal-server-release/jdk/bin/java -cp . -Djava.library.path=$(pwd) -Xgcpolicy:balanced -Xmx1g ArrayletTestJNI
-./../../openj9-openjdk-jdk11/build/linux-x86_64-normal-server-release/jdk/bin/java -cp . -Djava.library.path=$(pwd) -Xgcpolicy:balanced -Xmx1g -XXgc:enableDoubleMapping ArrayletTestJNI
+ - Without Double Map
+java -cp . -Djava.library.path=$(pwd) -Xgcpolicy:balanced -Xmx1g ArrayletTestJNI
+ - With Double Map
+java -cp . -Djava.library.path=$(pwd) -Xgcpolicy:balanced -Xmx1g -XXgc:enableDoubleMapping ArrayletTestJNI
 */
 
 public class ArrayletTestJNI {

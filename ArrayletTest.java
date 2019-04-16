@@ -1,15 +1,15 @@
 /* To run
  - compile
-./../openj9-openjdk-jdk11/build/linux-x86_64-normal-server-release/jdk/bin/javac ArrayletTest.java
+javac ArrayletTest.java
 
  - run without double mapping
-./../openj9-openjdk-jdk11/build/linux-x86_64-normal-server-release/jdk/bin/java -Xgcpolicy:balanced -Xmx1g ArrayletTest
+java -Xgcpolicy:balanced -Xmx1g ArrayletTest
 
  - run with double mapping
-./../openj9-openjdk-jdk11/build/linux-x86_64-normal-server-release/jdk/bin/java -Xgcpolicy:balanced -Xmx1g -XXgc:enableDoubleMapping ArrayletTest
+java -Xgcpolicy:balanced -Xmx1g -XXgc:enableDoubleMapping ArrayletTest
 
  - Translate trace if any
-./../openj9-openjdk-jdk11/build/linux-x86_64-normal-server-release/jdk/bin/traceformat trace trace.out
+traceformat trace trace.out
  */
 
 public class ArrayletTest {
