@@ -36,7 +36,30 @@ public class ArrayletTestJNI {
 	
 	public static void main(String[] args) {
 
+		if(args.length != 1) {
+			System.out.println("Usage: java ArrayletTestJNI <workload>");
+			System.out.println("workloads supported:\n\t1G\n\t2G\n\t4G\n\t8G");
+			System.exit(0);
+		}
+
+		int workload = new Integer(args[0].substring(0, args[0].length() - 1));
+		System.out.println("Running workload for " + workload + " G");
+
 		int arrayLength = 8_484_144; //8_390_608 -> Hybrid, 128 + 1 arraylet leaves. 8_454_144 -> Discontiguous 129 leaves
+		switch(workload) {
+			case 1:
+				arrayLength = 8_484_144;
+				break;
+			case 2:
+				arrayLength = 26_435_456;
+				break;
+			case 4:
+				arrayLength = 50_435_456;
+				break;
+			case 8:
+				arrayLength = 100_435_456;
+				break;
+		}
 		double[] myList1 = new double[arrayLength];
 		System.out.println("About to create an array of chars!");
 		char[] charArray = new char[arrayLength];
@@ -152,13 +175,45 @@ public class ArrayletTestJNI {
 		
 		System.gc();
 
-		double[][] myDoubleList = new double[1000][130_200]; // Hybrid 1+1 arraylet leaf
+		/*
+		double[][] myDoubleList = new double[1000][130_200]; // Hybrid 1+1 arraylet leaf // If regions are 2M in size these become 1000 contiguous arrays
 		for(int i = 0; i < 1000; i++) {
 			myDoubleList[i][10] = 4.5;
 			myDoubleList[i][5_693] = 2.5;
 			myDoubleList[i][29_032] = 6.5;
 			myDoubleList[i][77_932] = 0.5;
 		}
+		*/
+
+		/* For huge pages */
+		int firstDimSize = 160;
+		int secondDimSize = 350_000; // If region size is 2M, this occupies 2 regions
+		switch(workload) {
+			case 1:
+				firstDimSize = 160;
+				secondDimSize = 350_000;
+				break;
+			case 2:
+				firstDimSize = 320;
+				secondDimSize = 350_000;
+				break;
+			case 4:
+				firstDimSize = 500; // 4G heap is divided into 1024 regions of 4,194,304 bytes size each
+				secondDimSize = 700_000;
+				break;
+			case 8:
+				firstDimSize = 500; // 8G heap is divided into 1024 regions of 8,388,608 bytes size each
+				secondDimSize = 1_400_000;
+				break;
+		}
+		double[][] myDoubleList = new double[firstDimSize][secondDimSize]; // Hybrid 1+1 arraylet leaf // If regions are 2M in size these become 1000 contiguous arrays
+                for(int i = 0; i < firstDimSize; i++) {
+                        myDoubleList[i][10] = 4.5;
+                        myDoubleList[i][5_693] = 2.5;
+                        myDoubleList[i][29_032] = 6.5;
+                        myDoubleList[i][77_932] = 0.5;
+                }
+
 		// 
 		// ************************************************** Total of 2,000 regions occupied by arraylet leaves being kept in heap
 		//
@@ -169,8 +224,11 @@ public class ArrayletTestJNI {
 		System.out.println("##################################################################################################");
 
 		for(int i = 0; i < 100; i++) {
+			//System.out.println("\tAllocating arraylet with 3 leaves");
                         double[] myList8 = new double[134_072]; // Hybrid, 2 + 1 arraylet leaves
+			//System.out.println("\tAllocating arraylet with 14 leaves");
 			double[] myList9 = new double[880_000]; // Hybrid 13 + 1  arraylet leaves:: 524_288 -> 8 discontiguous 8 arraylet leaves
+			//System.out.println("\tAllocating arraylet with 13 leaves");
 			double[] myList10 = new double[790_098]; // Hybrid 12 + 1  arraylet leaves
 			// ************************************************** Total of 30 arraylet leaves
 			for(int j = 0; j < myList8.length; j++) { myList8[j] = i*5.5+2.3*j; }
@@ -179,7 +237,10 @@ public class ArrayletTestJNI {
                         System.out.println("Iter: " + i + ". Arrays: 1: " + myList8[2000] + ", 2: " + myList9[4000] + ", 10: " + myList10[203294]); 
                 }
 
-		System.out.println("myDoubleList[][]: " + myDoubleList[986][10] + ", next: " + myDoubleList[2][77_932]);
+		for(int i = 0; i < firstDimSize; i++) {
+                        myDoubleList[i][500_000] = 1.99;
+		}
+		System.out.println("myDoubleList[][]: " + myDoubleList[156][10] + ", next: " + myDoubleList[2][77_932]);
 
 		System.out.println("ArrayletTestJNI DONE.");
 	}
