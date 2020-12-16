@@ -42,7 +42,7 @@ public class ArrayletTestJNI {
 			System.exit(0);
 		}
 
-		int workload = new Integer(args[0].substring(0, args[0].length() - 1));
+		int workload = Integer.parseInt(args[0].substring(0, args[0].length() - 1));
 		System.out.println("Running workload for " + workload + " G");
 
 		int arrayLength = 8_484_144; //8_390_608 -> Hybrid, 128 + 1 arraylet leaves. 8_454_144 -> Discontiguous 129 leaves
